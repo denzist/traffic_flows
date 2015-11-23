@@ -35,7 +35,7 @@ public:
     {
       DijkstraInfo prev_info(curr_info->second);
       PVertex prev_vertex_ptr = curr_info->first;
-      EdgeVec edges = graph.find(curr_info->first)->second;
+      Edges edges = graph.find(curr_info->first)->second;
       info_map.erase(curr_info);
 
       for(auto it_edge = edges.begin(); it_edge != edges.end(); ++it_edge)
@@ -49,8 +49,9 @@ public:
 
         if(dist < end_node_info->second.dist)
         {
+          
           end_node_info->second.dist = dist;
-          end_node_info->second.path_ptr = prev_info.path_ptr;
+          end_node_info->second.path_ptr = std::make_shared<Path>(*(prev_info.path_ptr));
           end_node_info->second.path_ptr->push_back(prev_vertex_ptr);
         }
       }
@@ -63,7 +64,7 @@ public:
         break;
       }
     }
-
+    curr_info->second.path_ptr->push_back(finish_ptr);
     return curr_info->second.path_ptr;
   }
 

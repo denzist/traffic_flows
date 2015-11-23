@@ -8,17 +8,17 @@ int main() {
   for(int i = 0; i < 4; ++i)
   {
     v_ptr_vec[i] = Vertex::createPVertex();
-    graph.insert(std::pair<PVertex, EdgeVec>(v_ptr_vec[i], EdgeVec()));  
+    graph.insert(std::pair<PVertex, Edges>(v_ptr_vec[i], Edges()));
   }
   
   EdgeInfo edge_info_0_1(2., 3., 1.);
-  graph[v_ptr_vec[0]].push_back(Edge(v_ptr_vec[1], EdgeInfo(1., 3., 1.)));
-  graph[v_ptr_vec[0]].push_back(Edge(v_ptr_vec[2], EdgeInfo(4., 3., 1.)));
+  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[1], EdgeInfo(1., 3., 1.)));
+  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[2], EdgeInfo(4., 3., 1.)));
 
-  graph[v_ptr_vec[1]].push_back(Edge(v_ptr_vec[2], EdgeInfo(1., 3., 1.)));
-  graph[v_ptr_vec[1]].push_back(Edge(v_ptr_vec[3], EdgeInfo(4., 3., 1.)));
+  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[2], EdgeInfo(1., 3., 1.)));
+  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[3], EdgeInfo(4., 3., 1.)));
 
-  graph[v_ptr_vec[2]].push_back(Edge(v_ptr_vec[3], EdgeInfo(1., 3., 1.)));
+  graph[v_ptr_vec[2]].insert(Edge(v_ptr_vec[3], EdgeInfo(1., 3., 1.)));
 
   for (auto it = graph.begin(); it != graph.end(); ++it)
   {
@@ -41,9 +41,9 @@ int main() {
   {
     auto next = it;
     ++next;
-    EdgeInfo& info = graph[*next].second;
+    EdgeInfo& info = graph[*it][*next];
     std::cout<<"cost: "<<info.get_cost()<<"\n";
-    std::cout<<"i: "<<*next<<"\n";
+    std::cout<<"i: "<<(*next)->get_id()<<"\n";
     sum += info.get_cost();
   }
 

@@ -70,7 +70,7 @@ typedef std::shared_ptr<Vertex> PVertex;
 
 typedef std::pair<PVertex, EdgeInfo> Edge;
 typedef std::shared_ptr<Edge> PEdge;
-typedef std::vector<Edge> EdgeVec;
+typedef std::map<PVertex, EdgeInfo> Edges;
 
 
 class Vertex: private boost::noncopyable
@@ -82,7 +82,7 @@ public:
     return std::shared_ptr<Vertex>(new Vertex());
   }
 
-  int get_id()
+  int get_id() const
   {
     return id_;
   }
@@ -100,7 +100,7 @@ private:
 
 int Vertex::count_ = 0.;
 
-typedef std::map<PVertex, EdgeVec> Graph;
+typedef std::map<PVertex, Edges> Graph;
 typedef std::vector<PVertex> Path;
 
 typedef std::shared_ptr<Graph> PGraph;
