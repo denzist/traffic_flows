@@ -10,9 +10,6 @@
 #include <iostream>
 
 
-class Vertex;
-typedef std::shared_ptr<Vertex> PVertex;
-
 class EdgeInfo
 {
 public:
@@ -68,9 +65,12 @@ private:
 
 };
 
+class Vertex;
+typedef std::shared_ptr<Vertex> PVertex;
+
 typedef std::pair<PVertex, EdgeInfo> Edge;
 typedef std::shared_ptr<Edge> PEdge;
-typedef std::map<PVertex, EdgeInfo> EdgeSet;
+typedef std::vector<Edge> EdgeVec;
 
 
 class Vertex: private boost::noncopyable
@@ -82,36 +82,37 @@ public:
     return std::shared_ptr<Vertex>(new Vertex());
   }
 
-  static PVertex createPVertex(const EdgeSet& edges)
+  int get_id()
   {
-    return std::shared_ptr<Vertex>(new Vertex(edges));
-  }
-
-  EdgeSet& get_edges()
-  {
-    return edges_;
-  }
-
-  void add_edge(const Edge& edge)
-  {
-    edges_.insert(edge);
-    return;
+    return id_;
   }
 
 private:
-  Vertex(){}
+  static int count_;
+  int id_;
+  Vertex()
+  {
+    id_ = count_;
+    ++count_;
+  }
 
-  Vertex(const EdgeSet edges):
-  edges_(edges)
-  {}
-
-  EdgeSet edges_;
 };
+
+int Vertex::count_ = 0.;
+
+typedef std::map<PVertex, EdgeVec> Graph;
+typedef std::vector<PVertex> Path;
+
+typedef std::shared_ptr<Graph> PGraph;
+typedef std::shared_ptr<Path> PPath;
+
 
 class Correspondence;
 
 typedef std::shared_ptr<Correspondence> PCorrespondence;
 typedef std::vector<PCorrespondence> PCorrespondenceVec;
+typedef std::vector<Correspondence> CorrespondenceVec;
+
 
 
 class Correspondence: private boost::noncopyable
@@ -156,7 +157,3 @@ private:
   int total_flow_;
 };
 
-typedef std::vector<PVertex> Graph;
-typedef std::shared_ptr<Graph> PGraph;
-
-typedef std::vector<Correspondence> CorrespondenceVec;

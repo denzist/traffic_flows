@@ -13,19 +13,19 @@
 class Dijkstra
 {
 public:
-  static PGraph get_shortest_path(const Graph& graph, const Correspondence& corr)
+  static PPath get_shortest_path(const Graph& graph, const Correspondence& corr)
   {
     return get_shortest_path(graph, corr.get_start(), corr.get_end());
   }
 
-  static PGraph get_shortest_path(const Graph& graph, const PVertex start_ptr, const PVertex finish_ptr)
+  static PPath get_shortest_path(const Graph& graph, const PVertex start_ptr, const PVertex finish_ptr)
   {
     DijkstraInfoMap info_map;    
     for (auto it = graph.begin(); it != graph.end(); ++it)
     {
       DijkstraInfo info;
       info.dist = std::numeric_limits<double>::max();
-      info_map.insert(std::pair<PVertex, DijkstraInfo>(*it, info));
+      info_map.insert(std::pair<PVertex, DijkstraInfo>(it->first, info));
     }
     info_map[start_ptr].dist = 0.;
     
@@ -35,20 +35,17 @@ public:
     {
       DijkstraInfo prev_info(curr_info->second);
       PVertex prev_vertex_ptr = curr_info->first;
-
-      EdgeSet& edges = curr_info->first->get_edges();
-      
+      EdgeVec edges = graph.find(curr_info->first)->second;
       info_map.erase(curr_info);
 
       for(auto it_edge = edges.begin(); it_edge != edges.end(); ++it_edge)
       {
-        double dist = prev_info.dist + it_edge->second.get_cost();
         auto end_node_info = info_map.find(it_edge->first);
-
         if(end_node_info == info_map.end())
         {
           continue;
         }
+        double dist = prev_info.dist + it_edge->second.get_cost();
 
         if(dist < end_node_info->second.dist)
         {
@@ -67,7 +64,6 @@ public:
       }
     }
 
-    curr_info->second.path_ptr->push_back(curr_info->first);
     return curr_info->second.path_ptr;
   }
 
@@ -76,24 +72,24 @@ private:
   {
     DijkstraInfo():
     dist(0.),
-    path_ptr(new Graph())
+    path_ptr(new Path())
     {}
 
     DijkstraInfo(const DijkstraInfo& to_copy)
     {
       dist = to_copy.dist;
-      path_ptr = std::make_shared<Graph>(*(to_copy.path_ptr));
+      path_ptr = std::make_shared<Path>(*(to_copy.path_ptr));
     }
 
     DijkstraInfo& operator=( const DijkstraInfo& to_copy)
     {
       dist = to_copy.dist;
-      path_ptr = std::make_shared<Graph>(*(to_copy.path_ptr));
+      path_ptr = std::make_shared<Path>(*(to_copy.path_ptr));
       return *this;
     }
 
     double dist;
-    PGraph path_ptr;
+    PPath path_ptr;
   };
 
   typedef std::map<PVertex, DijkstraInfo> DijkstraInfoMap;
