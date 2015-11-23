@@ -3,7 +3,8 @@
 
 int main() {
 
-  Graph graph;
+  PGraph grap_ptr(new Graph());
+  Graph& graph = *grap_ptr;
   std::vector<PVertex> v_ptr_vec(4);
   for(int i = 0; i < 4; ++i)
   {
@@ -12,13 +13,13 @@ int main() {
   }
   
   EdgeInfo edge_info_0_1(2., 3., 1.);
-  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[1], EdgeInfo(1., 3., 1.)));
-  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[2], EdgeInfo(4., 3., 1.)));
+  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[1], EdgeInfo(0., 3., 1.)));
+  graph[v_ptr_vec[0]].insert(Edge(v_ptr_vec[2], EdgeInfo(0., 3., 1.)));
 
-  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[2], EdgeInfo(1., 3., 1.)));
-  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[3], EdgeInfo(4., 3., 1.)));
+  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[2], EdgeInfo(0., 3., 1.)));
+  graph[v_ptr_vec[1]].insert(Edge(v_ptr_vec[3], EdgeInfo(0., 3., 1.)));
 
-  graph[v_ptr_vec[2]].insert(Edge(v_ptr_vec[3], EdgeInfo(1., 3., 1.)));
+  graph[v_ptr_vec[2]].insert(Edge(v_ptr_vec[3], EdgeInfo(0., 3., 1.)));
 
   for (auto it = graph.begin(); it != graph.end(); ++it)
   {
@@ -48,6 +49,8 @@ int main() {
   }
 
   std::cout<<"path cost: "<<sum<<"\n";
+
+
 
 
   return 0;

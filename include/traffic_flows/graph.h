@@ -43,6 +43,7 @@ public:
   {
     return cost_;
   }
+
 private:
   double flow_;
   double max_flow_;
