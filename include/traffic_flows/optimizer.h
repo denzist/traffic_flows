@@ -49,9 +49,8 @@ public:
 
         if(dist < end_node_info->second.dist)
         {
-          
+          end_node_info->second = prev_info;
           end_node_info->second.dist = dist;
-          end_node_info->second.path_ptr = std::make_shared<Path>(*(prev_info.path_ptr));
           end_node_info->second.path_ptr->push_back(prev_vertex_ptr);
         }
       }

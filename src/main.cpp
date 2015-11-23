@@ -23,10 +23,10 @@ int main() {
   for (auto it = graph.begin(); it != graph.end(); ++it)
   {
     std::cout<<"i -- "<<it->first->get_id()<<" : ";   
-    for(auto it_e = it->second.begin(); it_e != it->second.end(); ++it_e)
+    for(auto edge_it = it->second.begin(); edge_it != it->second.end(); ++edge_it)
     {
-      std::cout<<it_e->first->get_id()<<" -- ";   
-      std::cout<<it_e->second.get_cost()<<"; ";   
+      std::cout<<edge_it->first->get_id()<<" -- ";   
+      std::cout<<edge_it->second.get_cost()<<"; ";   
     }
     std::cout<<"\n";
   }
