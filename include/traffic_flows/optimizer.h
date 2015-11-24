@@ -115,71 +115,71 @@ private:
 };
 
 
-// class GraphOptimizer
-// {
-// public:
-//   GraphOptimizer(
-//     std::shared_ptr<Graph> graph_ptr,
-//     std::shared_ptr<CorrespondenceVec> corr_vec_ptr):
-//   graph_ptr_(graph_ptr),
-//   corr_vec_ptr_(corr_vec_ptr),
-//   iteration_number_(0),
-//   gamma_(1.)
-//   {}
+class GraphOptimizer
+{
+public:
+  GraphOptimizer(
+    std::shared_ptr<Graph> graph_ptr,
+    std::shared_ptr<CorrespondenceVec> corr_vec_ptr):
+  graph_ptr_(graph_ptr),
+  corr_vec_ptr_(corr_vec_ptr),
+  iteration_number_(0),
+  gamma_(1.)
+  {}
 
-//   void step()
-//   {
-//     Graph& graph = *graph_ptr_;
-//     CorrespondenceVec& corr_vec = *corr_vec_ptr_;
-//     increase_iteration();
+  void step()
+  {
+    Graph& graph = *graph_ptr_;
+    CorrespondenceVec& corr_vec = *corr_vec_ptr_;
+    increase_iteration();
 
-//     std::vector<PPath> path_ptr_vec(corr_vec.size());
-//     for(PVertex i = 0; i < corr_vec.size(); ++i)
-//     {
-//       path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, corr_vec[i]);
-//     }
+    std::vector<PPath> path_ptr_vec(corr_vec.size());
+    for(int i = 0; i < corr_vec.size(); ++i)
+    {
+      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, corr_vec[i]);
+    }
 
-//     // discont vertex costs by gamma_
-//     for (auto graph_it = graph.begin(); graph_it != graph.end(); ++graph_it)
-//     {
-//       for(auto edge_it = graph_it->second.begin(); edge_it != graph_it->second.end(); ++edge_it)
-//       {
-//         EdgeInfo& curr_info = edge_it->second;
-//         double disc_flow = (1. - gamma_)*curr_info.get_flow();
-//         curr_info.set_flow(disc_flow);  
-//       }
-//     }
+    // discont vertex costs by gamma_
+    for (auto graph_it = graph.begin(); graph_it != graph.end(); ++graph_it)
+    {
+      for(auto edge_it = graph_it->second.begin(); edge_it != graph_it->second.end(); ++edge_it)
+      {
+        EdgeInfo& curr_info = edge_it->second;
+        double disc_flow = (1. - gamma_)*curr_info.get_flow();
+        curr_info.set_flow(disc_flow);  
+      }
+    }
 
-//     //walk around the graph and update flows
-//     for(PVertex i = 0; i < path_ptr_vec.size(); ++i)
-//     {
-//       auto start = path_ptr_vec[i]->begin();
-//       auto end = path_ptr_vec[i]->end();
-//       --end;
+    //walk around the graph and update flows
+    for(int i = 0; i < path_ptr_vec.size(); ++i)
+    {
+      auto start = path_ptr_vec[i]->begin();
+      auto end = path_ptr_vec[i]->end();
+      --end;
 
-//       for (auto it = start; it != end; ++it)
-//       {
-//         auto next = it;
-//         ++next;
+      for (auto it = start; it != end; ++it)
+      {
+        auto next = it;
+        ++next;
 
-//         EdgeInfo& curr_info = graph[*it][*next];
-//         double new_flow = curr_info.get_flow() + gamma_*corr_vec[i].get_total_flow();
-//         curr_info.set_flow(new_flow); //update cost
-//       }
+        EdgeInfo& curr_info = graph[*it][*next];
+        double new_flow = curr_info.get_flow() + gamma_*corr_vec[i].get_total_flow();
+        curr_info.set_flow(new_flow); //update cost
+      }
 
-//     }
+    }
 
-//   }
-// private:
-//   std::shared_ptr<Graph> graph_ptr_;
-//   std::shared_ptr<CorrespondenceVec> corr_vec_ptr_;
-//   PVertex iteration_number_;
-//   double gamma_;
+  }
+private:
+  std::shared_ptr<Graph> graph_ptr_;
+  std::shared_ptr<CorrespondenceVec> corr_vec_ptr_;
+  int iteration_number_;
+  double gamma_;
 
-//   void increase_iteration()
-//   {
-//     gamma_ = 1./(1. + double(iteration_number_));
-//     ++iteration_number_;
-//   }
-// };
+  void increase_iteration()
+  {
+    gamma_ = 1./(1. + double(iteration_number_));
+    ++iteration_number_;
+  }
+};
 

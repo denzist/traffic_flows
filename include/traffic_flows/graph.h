@@ -114,8 +114,6 @@ typedef std::shared_ptr<Correspondence> PCorrespondence;
 typedef std::vector<PCorrespondence> PCorrespondenceVec;
 typedef std::vector<Correspondence> CorrespondenceVec;
 
-
-
 class Correspondence: private boost::noncopyable
 {
 public:
