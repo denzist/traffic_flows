@@ -10,6 +10,7 @@ int main() {
   }
   
   EdgeInfo edge_info_0_1(2., 3., 1.);
+  //edge info : flow, max_flow, time_cost, gamma (default = 1.)
   graph[0].insert(Edge(1, EdgeInfo(0., 3., 1.)));
   graph[0].insert(Edge(2, EdgeInfo(0., 3., 1.)));
 

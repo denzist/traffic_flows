@@ -17,13 +17,14 @@ public:
   EdgeInfo(
     double flow,
     double max_flow,
-    double time_cost):
+    double time_cost,
+    double gamma = 1.):
   flow_(flow),
   max_flow_(max_flow),
   time_cost_(time_cost),
   mu_(0.25),
   inv_mu_(1./mu_),
-  gamma_(1.)
+  gamma_(gamma)
   {
     update_cost();
   }

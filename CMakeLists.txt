@@ -12,7 +12,7 @@ add_library(traffic_flows
 target_link_libraries(traffic_flows)
 
 add_executable(demo
-  src/main.cpp)
+  src/demo.cpp)
 
 target_link_libraries(demo
   traffic_flows)
