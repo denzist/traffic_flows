@@ -10,72 +10,15 @@
 #include <limits>
 #include "traffic_flows/graph.h"
 
-
 class Dijkstra
 {
 public:
-  static PPath get_shortest_path(const Graph& graph, PCorrespondence corr_ptr)
+  static PPath get_shortest_path(const Graph& graph, const Correspondence& corr)
   {
-    return get_shortest_path(graph, corr_ptr->get_start(), corr_ptr->get_end());
+    return get_shortest_path(graph, corr.get_start(), corr.get_end());
   }
 
-  static PPath get_shortest_path(const Graph& graph, const ulong start_ptr, const ulong finish_ptr)
-  {
-    //init dijkstra info map of graph
-    DijkstraInfoMap info_map;
-    VeretexSet vertices;    
-
-    for (auto it = graph.begin(); it != graph.end(); ++it)
-    {
-      DijkstraInfo info;
-      info_map.insert(std::pair<ulong, DijkstraInfo>(it->first, info));
-      vertices.insert(it->first);
-    }
-    info_map[start_ptr].dist_ = 0.;
-    
-    //starting finding the min path
-    auto vertex_it = find_info_with_min_dist(info_map, vertices);
-
-    while(*vertex_it != finish_ptr)
-    {
-      DijkstraInfo& prev_info = info_map[*vertex_it];
-      ulong prev_vertex = *vertex_it;
-      const Edges& edges = graph.find(prev_vertex)->second;
-
-      vertices.erase(vertex_it);
-
-      for(auto it_edge = edges.begin(); it_edge != edges.end(); ++it_edge)
-      {
-        ulong end_vertex = it_edge->first;
-        DijkstraInfo& end_vertex_info = info_map[end_vertex];
-        double dist = prev_info.dist_ + it_edge->second.get_cost();
-
-        if(dist < end_vertex_info.dist_)
-        {
-          end_vertex_info.dist_ = dist;
-          end_vertex_info.prev_vertex_ = prev_vertex;
-        }
-      }
-      if(!vertices.empty())
-      {
-        vertex_it = find_info_with_min_dist(info_map, vertices);
-      }
-      else
-      {
-        break;
-      }
-    }
-    PPath path_ptr = std::make_shared<Path>();
-    path_ptr->insert(path_ptr->begin(), finish_ptr);
-    ulong prev_vertex = info_map[*vertex_it].prev_vertex_;
-    while(prev_vertex != std::numeric_limits<ulong>::max())
-    {
-      path_ptr->insert(path_ptr->begin(), prev_vertex);
-      prev_vertex = info_map[prev_vertex].prev_vertex_;
-
-    }
-    return path_ptr;
-  }
+  static PPath get_shortest_path(const Graph& graph, const ulong start_ptr, const ulong finish_ptr);
 
 private:
   struct DijkstraInfo
@@ -94,23 +37,7 @@ private:
   
   static std::set<ulong>::iterator find_info_with_min_dist(
     DijkstraInfoMap& info_map,
-    VeretexSet& vertices)
-  {
-    auto vertex_with_min_dist = vertices.begin();
-    double min_dist = info_map[*vertex_with_min_dist].dist_;
-    auto start = vertex_with_min_dist;
-    ++start;
-    for(auto it = start; it != vertices.end(); ++it)
-    {
-      double dist = info_map[*it].dist_; 
-      if(dist < min_dist)
-      {
-        min_dist = dist;
-        vertex_with_min_dist = it;
-      }
-    }
-    return vertex_with_min_dist;
-  }
+    VeretexSet& vertices);
 };
 
 
@@ -118,67 +45,88 @@ class GraphOptimizer
 {
 public:
   GraphOptimizer(
-    std::shared_ptr<Graph> graph_ptr,
-    std::shared_ptr<PCorrespondenceVec> pcorr_vec_ptr):
-  graph_ptr_(graph_ptr),
-  pcorr_vec_ptr_(pcorr_vec_ptr),
-  iteration_number_(0),
-  gamma_(1.)
-  {}
-
-  void step()
+    Graph& graph,
+    const CorrespondenceVec& corr_vec,
+    double relative_eps = 0.001):
+  graph_(graph),
+  corr_vec_(corr_vec),
+  iteration_step_(0),
+  gamma_(1.),
+  max_psi_and_linear_apprx_(std::numeric_limits<double>::lowest()),
+  psi_(0.),
+  psi_linear_aprx_(0.),
+  relative_eps_(relative_eps),
+  end_flg_(false)
   {
-    Graph& graph = *graph_ptr_;
-    PCorrespondenceVec& pcorr_vec = *pcorr_vec_ptr_;
-    increase_iteration();
-
-    std::vector<PPath> path_ptr_vec(pcorr_vec.size());
-    for(int i = 0; i < pcorr_vec.size(); ++i)
-    {
-      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, pcorr_vec[i]);
-    }
-
-    // discont vertex costs by gamma_
-    for (auto graph_it = graph.begin(); graph_it != graph.end(); ++graph_it)
+    //init opt_curr_flow_ for every edge
+    for (auto graph_it = graph_.begin(); graph_it != graph_.end(); ++graph_it)
     {
       for(auto edge_it = graph_it->second.begin(); edge_it != graph_it->second.end(); ++edge_it)
       {
-        EdgeInfo& curr_info = edge_it->second;
-        double disc_flow = (1. - gamma_)*curr_info.get_flow();
-        curr_info.set_flow(disc_flow);  
+        EdgeInfo& edge_info = edge_it->second;
+        edge_info.opt_prev_flow_ = edge_info.flow_;
+        edge_info.opt_curr_flow_ = 0.;
       }
     }
 
-    //walk around the graph and update flows
+    std::vector<PPath> path_ptr_vec(corr_vec_.size());
+    for(int i = 0; i < corr_vec_.size(); ++i)
+    {
+      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph_, corr_vec_[i]);
+    }
+
     for(int i = 0; i < path_ptr_vec.size(); ++i)
     {
-      auto start = path_ptr_vec[i]->begin();
-      auto end = path_ptr_vec[i]->end();
-      --end;
-
-      for (auto it = start; it != end; ++it)
-      {
-        auto next = it;
-        ++next;
-
-        EdgeInfo& curr_info = graph[*it][*next];
-        double new_flow = curr_info.get_flow() + gamma_*pcorr_vec[i]->get_total_flow();
-        curr_info.set_flow(new_flow); //update cost
-      }
-
+      go_through_path(path_ptr_vec[i], corr_vec_[i].get_total_flow());
     }
-
   }
-private:
-  std::shared_ptr<Graph> graph_ptr_;
-  std::shared_ptr<PCorrespondenceVec> pcorr_vec_ptr_;
-  int iteration_number_;
-  double gamma_;
 
-  void increase_iteration()
+  bool step();
+
+  int get_iteration_step() const
   {
-    gamma_ = 1./(1. + double(iteration_number_));
-    ++iteration_number_;
+    return iteration_step_;
   }
+
+  double get_psi() const
+  {
+    return psi_;
+  }
+
+  double get_max_psi_and_linear_aprx() const
+  {
+    return max_psi_and_linear_apprx_;
+  }
+
+  double get_border_acc_val() const
+  {
+    return border_acc_val_;
+  }
+
+private:
+  Graph& graph_;
+  const CorrespondenceVec& corr_vec_;
+  int iteration_step_;
+  double gamma_;
+  double relative_eps_;
+
+  double max_psi_and_linear_apprx_;
+  double psi_start_;
+  double border_acc_val_;
+  double psi_;
+  double psi_linear_aprx_;
+  bool end_flg_;
+
+  void increase_iteration_step()
+  {
+    gamma_ = 1./(1. + double(iteration_step_));
+    ++iteration_step_;
+  }
+
+  void walk_through_graph();
+
+  void go_through_path(PPath path_ptr, double corr_flow);
+
+  void revert_graph();
 };
 
