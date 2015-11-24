@@ -14,9 +14,9 @@
 class Dijkstra
 {
 public:
-  static PPath get_shortest_path(const Graph& graph, const Correspondence& corr)
+  static PPath get_shortest_path(const Graph& graph, PCorrespondence corr_ptr)
   {
-    return get_shortest_path(graph, corr.get_start(), corr.get_end());
+    return get_shortest_path(graph, corr_ptr->get_start(), corr_ptr->get_end());
   }
 
   static PPath get_shortest_path(const Graph& graph, const PVertex start_ptr, const PVertex finish_ptr)
@@ -120,9 +120,9 @@ class GraphOptimizer
 public:
   GraphOptimizer(
     std::shared_ptr<Graph> graph_ptr,
-    std::shared_ptr<CorrespondenceVec> corr_vec_ptr):
+    std::shared_ptr<PCorrespondenceVec> pcorr_vec_ptr):
   graph_ptr_(graph_ptr),
-  corr_vec_ptr_(corr_vec_ptr),
+  pcorr_vec_ptr_(pcorr_vec_ptr),
   iteration_number_(0),
   gamma_(1.)
   {}
@@ -130,13 +130,13 @@ public:
   void step()
   {
     Graph& graph = *graph_ptr_;
-    CorrespondenceVec& corr_vec = *corr_vec_ptr_;
+    PCorrespondenceVec& pcorr_vec = *pcorr_vec_ptr_;
     increase_iteration();
 
-    std::vector<PPath> path_ptr_vec(corr_vec.size());
-    for(int i = 0; i < corr_vec.size(); ++i)
+    std::vector<PPath> path_ptr_vec(pcorr_vec.size());
+    for(int i = 0; i < pcorr_vec.size(); ++i)
     {
-      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, corr_vec[i]);
+      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, pcorr_vec[i]);
     }
 
     // discont vertex costs by gamma_
@@ -163,7 +163,7 @@ public:
         ++next;
 
         EdgeInfo& curr_info = graph[*it][*next];
-        double new_flow = curr_info.get_flow() + gamma_*corr_vec[i].get_total_flow();
+        double new_flow = curr_info.get_flow() + gamma_*pcorr_vec[i]->get_total_flow();
         curr_info.set_flow(new_flow); //update cost
       }
 
@@ -172,7 +172,7 @@ public:
   }
 private:
   std::shared_ptr<Graph> graph_ptr_;
-  std::shared_ptr<CorrespondenceVec> corr_vec_ptr_;
+  std::shared_ptr<PCorrespondenceVec> pcorr_vec_ptr_;
   int iteration_number_;
   double gamma_;
 
