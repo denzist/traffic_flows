@@ -6,6 +6,7 @@
 #include <math.h>
 #include <utility>
 #include <map>
+#include <set>
 #include <limits>
 #include "traffic_flows/graph.h"
 
@@ -21,165 +22,164 @@ public:
   static PPath get_shortest_path(const Graph& graph, const PVertex start_ptr, const PVertex finish_ptr)
   {
     //init dijkstra info map of graph
-    DijkstraInfoMap info_map;    
+
+    DijkstraInfoMap info_map;
+    VeretexSet vertices;    
+
     for (auto it = graph.begin(); it != graph.end(); ++it)
     {
       DijkstraInfo info;
-      info.dist = std::numeric_limits<double>::max();
       info_map.insert(std::pair<PVertex, DijkstraInfo>(it->first, info));
+      vertices.insert(it->first);
     }
-    info_map[start_ptr].dist = 0.;
+    info_map[start_ptr].dist_ = 0.;
     
     //starting finding the min path
-    auto curr_info = find_info_with_min_dist(info_map);
+    auto vertex_it = find_info_with_min_dist(info_map, vertices);
 
-    while(curr_info->first != finish_ptr)
+    while(*vertex_it != finish_ptr)
     {
-      DijkstraInfo prev_info(curr_info->second);
-      PVertex prev_vertex_ptr = curr_info->first;
-      Edges edges = graph.find(curr_info->first)->second;
-      info_map.erase(curr_info);
+      DijkstraInfo& prev_info = info_map[*vertex_it];
+      PVertex prev_pvertex = *vertex_it;
+      const Edges& edges = graph.find(prev_pvertex)->second;
+
+      vertices.erase(vertex_it);
 
       for(auto it_edge = edges.begin(); it_edge != edges.end(); ++it_edge)
       {
-        auto end_node_info = info_map.find(it_edge->first);
-        if(end_node_info == info_map.end())
-        {
-          continue;
-        }
-        double dist = prev_info.dist + it_edge->second.get_cost();
+        PVertex end_vertex = it_edge->first;
+        DijkstraInfo& end_vertex_info = info_map[end_vertex];
+        double dist = prev_info.dist_ + it_edge->second.get_cost();
 
-        if(dist < end_node_info->second.dist)
+        if(dist < end_vertex_info.dist_)
         {
-          end_node_info->second = prev_info;
-          end_node_info->second.dist = dist;
-          end_node_info->second.path_ptr->push_back(prev_vertex_ptr);
+          end_vertex_info.dist_ = dist;
+          end_vertex_info.prev_pvertex_ = prev_pvertex;
         }
       }
-      if(!info_map.empty())
+      if(!vertices.empty())
       {
-        curr_info = find_info_with_min_dist(info_map);
+        vertex_it = find_info_with_min_dist(info_map, vertices);
       }
       else
       {
         break;
       }
     }
-    curr_info->second.path_ptr->push_back(finish_ptr);
-    return curr_info->second.path_ptr;
+    PPath path_ptr = std::make_shared<Path>();
+    path_ptr->insert(path_ptr->begin(), finish_ptr);
+    PVertex prev_pvertex = info_map[*vertex_it].prev_pvertex_;
+    while(prev_pvertex)
+    {
+      path_ptr->insert(path_ptr->begin(), prev_pvertex);
+      prev_pvertex = info_map[prev_pvertex].prev_pvertex_;
+
+    }
+    return path_ptr;
   }
 
 private:
   struct DijkstraInfo
   {
     DijkstraInfo():
-    dist(0.),
-    path_ptr(new Path())
+    dist_(std::numeric_limits<double>::max()),
+    prev_pvertex_(nullptr)
     {}
 
-    DijkstraInfo(const DijkstraInfo& to_copy)
-    {
-      dist = to_copy.dist;
-      path_ptr = std::make_shared<Path>(*(to_copy.path_ptr));
-    }
-
-    DijkstraInfo& operator=( const DijkstraInfo& to_copy)
-    {
-      dist = to_copy.dist;
-      path_ptr = std::make_shared<Path>(*(to_copy.path_ptr));
-      return *this;
-    }
-
-    double dist;
-    PPath path_ptr;
+    double dist_;
+    PVertex prev_pvertex_;
   };
 
   typedef std::map<PVertex, DijkstraInfo> DijkstraInfoMap;
+  typedef std::set<PVertex> VeretexSet;
   
-  static std::map<PVertex, DijkstraInfo>::iterator find_info_with_min_dist(DijkstraInfoMap& info_map)
+  static std::set<PVertex>::iterator find_info_with_min_dist(
+    DijkstraInfoMap& info_map,
+    VeretexSet& vertices)
   {
-    double min_dist = info_map.begin()->second.dist;
-    auto info_with_min_dist = info_map.begin();
-    auto start = info_with_min_dist;
+    auto vertex_with_min_dist = vertices.begin();
+    double min_dist = info_map[*vertex_with_min_dist].dist_;
+    auto start = vertex_with_min_dist;
     ++start;
-    for(auto it = start; it != info_map.end(); ++it)
+    for(auto it = start; it != vertices.end(); ++it)
     {
-      if(it->second.dist < min_dist)
+      double dist = info_map[*it].dist_; 
+      if(dist < min_dist)
       {
-        min_dist = it->second.dist;
-        info_with_min_dist = it;
+        min_dist = dist;
+        vertex_with_min_dist = it;
       }
     }
-    return info_with_min_dist;
+    return vertex_with_min_dist;
   }
 };
 
 
-class GraphOptimizer
-{
-public:
-  GraphOptimizer(
-    std::shared_ptr<Graph> graph_ptr,
-    std::shared_ptr<CorrespondenceVec> corr_vec_ptr):
-  graph_ptr_(graph_ptr),
-  corr_vec_ptr_(corr_vec_ptr),
-  iteration_number_(0),
-  gamma_(1.)
-  {}
+// class GraphOptimizer
+// {
+// public:
+//   GraphOptimizer(
+//     std::shared_ptr<Graph> graph_ptr,
+//     std::shared_ptr<CorrespondenceVec> corr_vec_ptr):
+//   graph_ptr_(graph_ptr),
+//   corr_vec_ptr_(corr_vec_ptr),
+//   iteration_number_(0),
+//   gamma_(1.)
+//   {}
 
-  void step()
-  {
-    Graph& graph = *graph_ptr_;
-    CorrespondenceVec& corr_vec = *corr_vec_ptr_;
-    increase_iteration();
+//   void step()
+//   {
+//     Graph& graph = *graph_ptr_;
+//     CorrespondenceVec& corr_vec = *corr_vec_ptr_;
+//     increase_iteration();
 
-    std::vector<PPath> path_ptr_vec(corr_vec.size());
-    for(int i = 0; i < corr_vec.size(); ++i)
-    {
-      path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, corr_vec[i]);
-    }
+//     std::vector<PPath> path_ptr_vec(corr_vec.size());
+//     for(PVertex i = 0; i < corr_vec.size(); ++i)
+//     {
+//       path_ptr_vec[i] = Dijkstra::get_shortest_path(graph, corr_vec[i]);
+//     }
 
-    // discont vertex costs by gamma_
-    for (auto graph_it = graph.begin(); graph_it != graph.end(); ++graph_it)
-    {
-      for(auto edge_it = graph_it->second.begin(); edge_it != graph_it->second.end(); ++edge_it)
-      {
-        EdgeInfo& curr_info = edge_it->second;
-        double disc_flow = (1. - gamma_)*curr_info.get_flow();
-        curr_info.set_flow(disc_flow);  
-      }
-    }
+//     // discont vertex costs by gamma_
+//     for (auto graph_it = graph.begin(); graph_it != graph.end(); ++graph_it)
+//     {
+//       for(auto edge_it = graph_it->second.begin(); edge_it != graph_it->second.end(); ++edge_it)
+//       {
+//         EdgeInfo& curr_info = edge_it->second;
+//         double disc_flow = (1. - gamma_)*curr_info.get_flow();
+//         curr_info.set_flow(disc_flow);  
+//       }
+//     }
 
-    //walk around the graph and update flows
-    for(int i = 0; i < path_ptr_vec.size(); ++i)
-    {
-      auto start = path_ptr_vec[i]->begin();
-      auto end = path_ptr_vec[i]->end();
-      --end;
+//     //walk around the graph and update flows
+//     for(PVertex i = 0; i < path_ptr_vec.size(); ++i)
+//     {
+//       auto start = path_ptr_vec[i]->begin();
+//       auto end = path_ptr_vec[i]->end();
+//       --end;
 
-      for (auto it = start; it != end; ++it)
-      {
-        auto next = it;
-        ++next;
+//       for (auto it = start; it != end; ++it)
+//       {
+//         auto next = it;
+//         ++next;
 
-        EdgeInfo& curr_info = graph[*it][*next];
-        double new_flow = curr_info.get_flow() + gamma_*corr_vec[i].get_total_flow();
-        curr_info.set_flow(new_flow); //update cost
-      }
+//         EdgeInfo& curr_info = graph[*it][*next];
+//         double new_flow = curr_info.get_flow() + gamma_*corr_vec[i].get_total_flow();
+//         curr_info.set_flow(new_flow); //update cost
+//       }
 
-    }
+//     }
 
-  }
-private:
-  std::shared_ptr<Graph> graph_ptr_;
-  std::shared_ptr<CorrespondenceVec> corr_vec_ptr_;
-  int iteration_number_;
-  double gamma_;
+//   }
+// private:
+//   std::shared_ptr<Graph> graph_ptr_;
+//   std::shared_ptr<CorrespondenceVec> corr_vec_ptr_;
+//   PVertex iteration_number_;
+//   double gamma_;
 
-  void increase_iteration()
-  {
-    gamma_ = 1./(1. + double(iteration_number_));
-    ++iteration_number_;
-  }
-};
+//   void increase_iteration()
+//   {
+//     gamma_ = 1./(1. + double(iteration_number_));
+//     ++iteration_number_;
+//   }
+// };
 

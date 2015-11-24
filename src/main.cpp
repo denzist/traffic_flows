@@ -51,7 +51,5 @@ int main() {
   std::cout<<"path cost: "<<sum<<"\n";
 
 
-
-
   return 0;
 }
