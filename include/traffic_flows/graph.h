@@ -66,43 +66,13 @@ private:
 
 };
 
-class Vertex;
-typedef std::shared_ptr<Vertex> PVertex;
-
-typedef std::pair<PVertex, EdgeInfo> Edge;
+typedef std::pair<ulong, EdgeInfo> Edge;
 typedef std::shared_ptr<Edge> PEdge;
-typedef std::map<PVertex, EdgeInfo> Edges;
+typedef std::map<ulong, EdgeInfo> Edges;
 
 
-class Vertex: private boost::noncopyable
-{
-public:
-
-  static PVertex createPVertex()
-  {
-    return std::shared_ptr<Vertex>(new Vertex());
-  }
-
-  int get_id() const
-  {
-    return id_;
-  }
-
-private:
-  static int count_;
-  int id_;
-  Vertex()
-  {
-    id_ = count_;
-    ++count_;
-  }
-
-};
-
-int Vertex::count_ = 0.;
-
-typedef std::map<PVertex, Edges> Graph;
-typedef std::vector<PVertex> Path;
+typedef std::map<ulong, Edges> Graph;
+typedef std::vector<ulong> Path;
 
 typedef std::shared_ptr<Graph> PGraph;
 typedef std::shared_ptr<Path> PPath;
@@ -112,29 +82,28 @@ class Correspondence;
 
 typedef std::shared_ptr<Correspondence> PCorrespondence;
 typedef std::vector<PCorrespondence> PCorrespondenceVec;
-typedef std::vector<Correspondence> CorrespondenceVec;
 
 class Correspondence: private boost::noncopyable
 {
 public:
   static PCorrespondence createPCorrespondence(
-   std::pair<PVertex, PVertex>  start_end,
+   std::pair<ulong, ulong>  start_end,
     int total_flow)
   {
     return std::shared_ptr<Correspondence>(new Correspondence(start_end, total_flow));
   }
 
-  std::pair<const PVertex, const PVertex>& get_start_end()
+  std::pair<const ulong, const ulong>& get_start_end()
   {
     return start_end_;
   }
 
-  const PVertex get_start() const
+  const ulong get_start() const
   {
     return start_end_.first;
   }
 
-  const PVertex get_end() const
+  const ulong get_end() const
   {
     return start_end_.second;
   }
@@ -146,13 +115,13 @@ public:
 
 private:
   Correspondence(
-    std::pair<const PVertex, const PVertex>  start_end,
+    std::pair<const ulong, const ulong>  start_end,
     int total_flow):
   start_end_(start_end),
   total_flow_(total_flow)
   {}
 
-  std::pair<const PVertex, const PVertex>  start_end_;
+  std::pair<const ulong, const ulong>  start_end_;
   int total_flow_;
 };
 

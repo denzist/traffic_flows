@@ -19,17 +19,16 @@ public:
     return get_shortest_path(graph, corr_ptr->get_start(), corr_ptr->get_end());
   }
 
-  static PPath get_shortest_path(const Graph& graph, const PVertex start_ptr, const PVertex finish_ptr)
+  static PPath get_shortest_path(const Graph& graph, const ulong start_ptr, const ulong finish_ptr)
   {
     //init dijkstra info map of graph
-
     DijkstraInfoMap info_map;
     VeretexSet vertices;    
 
     for (auto it = graph.begin(); it != graph.end(); ++it)
     {
       DijkstraInfo info;
-      info_map.insert(std::pair<PVertex, DijkstraInfo>(it->first, info));
+      info_map.insert(std::pair<ulong, DijkstraInfo>(it->first, info));
       vertices.insert(it->first);
     }
     info_map[start_ptr].dist_ = 0.;
@@ -40,21 +39,21 @@ public:
     while(*vertex_it != finish_ptr)
     {
       DijkstraInfo& prev_info = info_map[*vertex_it];
-      PVertex prev_pvertex = *vertex_it;
-      const Edges& edges = graph.find(prev_pvertex)->second;
+      ulong prev_vertex = *vertex_it;
+      const Edges& edges = graph.find(prev_vertex)->second;
 
       vertices.erase(vertex_it);
 
       for(auto it_edge = edges.begin(); it_edge != edges.end(); ++it_edge)
       {
-        PVertex end_vertex = it_edge->first;
+        ulong end_vertex = it_edge->first;
         DijkstraInfo& end_vertex_info = info_map[end_vertex];
         double dist = prev_info.dist_ + it_edge->second.get_cost();
 
         if(dist < end_vertex_info.dist_)
         {
           end_vertex_info.dist_ = dist;
-          end_vertex_info.prev_pvertex_ = prev_pvertex;
+          end_vertex_info.prev_vertex_ = prev_vertex;
         }
       }
       if(!vertices.empty())
@@ -68,11 +67,11 @@ public:
     }
     PPath path_ptr = std::make_shared<Path>();
     path_ptr->insert(path_ptr->begin(), finish_ptr);
-    PVertex prev_pvertex = info_map[*vertex_it].prev_pvertex_;
-    while(prev_pvertex)
+    ulong prev_vertex = info_map[*vertex_it].prev_vertex_;
+    while(prev_vertex != std::numeric_limits<ulong>::max())
     {
-      path_ptr->insert(path_ptr->begin(), prev_pvertex);
-      prev_pvertex = info_map[prev_pvertex].prev_pvertex_;
+      path_ptr->insert(path_ptr->begin(), prev_vertex);
+      prev_vertex = info_map[prev_vertex].prev_vertex_;
 
     }
     return path_ptr;
@@ -83,17 +82,17 @@ private:
   {
     DijkstraInfo():
     dist_(std::numeric_limits<double>::max()),
-    prev_pvertex_(nullptr)
+    prev_vertex_(std::numeric_limits<ulong>::max())
     {}
 
     double dist_;
-    PVertex prev_pvertex_;
+    ulong prev_vertex_;
   };
 
-  typedef std::map<PVertex, DijkstraInfo> DijkstraInfoMap;
-  typedef std::set<PVertex> VeretexSet;
+  typedef std::map<ulong, DijkstraInfo> DijkstraInfoMap;
+  typedef std::set<ulong> VeretexSet;
   
-  static std::set<PVertex>::iterator find_info_with_min_dist(
+  static std::set<ulong>::iterator find_info_with_min_dist(
     DijkstraInfoMap& info_map,
     VeretexSet& vertices)
   {
